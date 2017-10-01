@@ -36,18 +36,9 @@ FusionEKF::FusionEKF() {
     * Finish initializing the FusionEKF.
     * Set the process and measurement noises
   */
-  MatrixXd P_in = MatrixXd(4,4);
-  P_in << 1, 0, 0, 0,
-          0, 1, 0, 0,
-          0, 0, 1000, 0,
-          0, 0, 0, 1000;
-  MatrixXd F_in = MatrixXd(4, 4);
-  F_in << 1, 0, 1, 0,
-            0, 1, 0, 1,
-            0, 0, 1, 0,
-            0, 0, 0, 1;        
+   
   ekf_ = KalmanFilter();
-  ekf_.Init(x_in, P_in, F_in, H_in, R_in, Q_in)
+
 }
 
 /**
