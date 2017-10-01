@@ -36,8 +36,18 @@ FusionEKF::FusionEKF() {
     * Finish initializing the FusionEKF.
     * Set the process and measurement noises
   */
+  MatrixXd P_in = MatrixXd(4,4);
+  P_in << 1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1000, 0,
+          0, 0, 0, 1000;
+  MatrixXd F_in = MatrixXd(4, 4);
+  F_in << 1, 0, 1, 0,
+            0, 1, 0, 1,
+            0, 0, 1, 0,
+            0, 0, 0, 1;        
   ekf_ = KalmanFilter();
-
+  ekf_.Init(x_in, P_in, F_in, H_in, R_in, Q_in)
 }
 
 /**
@@ -83,7 +93,6 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       Initialize state.
       */
       ekf_.x_ << measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1], 0, 0;
-
     }
 
     // done initializing, no need to predict or update
@@ -103,6 +112,25 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
      * Update the process noise covariance matrix.
      * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
    */
+	float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
+	previous_timestamp_ = measurement_pack.timestamp_;
+	    
+	//1. Modify the F matrix so that the time is integrated
+  ekf_.F_ << 1, 0, dt, 0,
+			  0, 1, 0, dt,
+			  0, 0, 1, 0,
+			  0, 0, 0, 1;	
+  //2. Set the process covariance matrix Q
+  float noise_ax = 9;
+  float noise_ay = 9;
+	float dt4 = dt * dt * dt * dt;
+	float dt3 = dt * dt * dt;
+	float dt2 = dt * dt;
+	ekf_.Q_ = MatrixXd(4,4);
+	ekf_.Q_ << dt4/4 * noise_ax, 0,                dt3/2*noise_ax, 0,
+              0,                dt4/4 * noise_ay, 0,              dt3/2*noise_ay,
+              dt3/2*noise_ax,   0,                dt2 * noise_ax, 0, 
+              0,                dt3/2*noise_ay,   0,              dt2*noise_ay;
 
   ekf_.Predict();
 
@@ -121,7 +149,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.UpdateEKF(measurement_pack.raw_measurements_);
   } else {
     // Laser updates
-    ekf_.UpdateEKF(measurement_pack.raw_measurements_);
+    ekf_.Update(measurement_pack.raw_measurements_);
   }
 
   // print the output
