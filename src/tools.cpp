@@ -5,6 +5,8 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using std::vector;
 
+
+
 Tools::Tools() {}
 
 Tools::~Tools() {}
@@ -46,7 +48,7 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
   double py = x_state(1);
   double vx = x_state(2);
   double vy = x_state(3);
-  
+
   double c1 = px*px + py*py;
   double c2 = std::sqrt(c1);
   double c3 = c1 * c2;

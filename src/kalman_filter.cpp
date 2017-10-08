@@ -58,18 +58,18 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
     * update the state by using Extended Kalman Filter equations (Radar)
   */
   double rho = sqrt(x_(0)*x_(0) + x_(1)*x_(1));
+  if(rho < 0.000001)  rho = 0.000001;  
   double theta = atan2(x_(1) , x_(0));
   double rho_dot = (x_(0)*x_(2) + x_(1)*x_(3)) / rho;
-  if(rho < 0.000001)  rho = 0.000001;  
+  
   VectorXd h = VectorXd(3); // h(x_)
   h << rho, theta, rho_dot;
   
   VectorXd y = z - h;
-
+  //normalize 
   while(y(1) > M_PI){
     y(1) -= DoublePI;
   }
-
   while(y(1) < -M_PI){
     y(1) += DoublePI;
   }
