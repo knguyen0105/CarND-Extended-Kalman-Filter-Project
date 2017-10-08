@@ -3,6 +3,8 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+const float DoublePI = 2 * M_PI;
+
 KalmanFilter::KalmanFilter() {}
 
 KalmanFilter::~KalmanFilter() {}
@@ -27,24 +29,27 @@ void KalmanFilter::Predict() {
   P_ = F_ * P_ * Ft + Q_;
 }
 
+void KalmanFilter::KF(const VectorXd &y){
+  MatrixXd Ht = H_.transpose();
+  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd Si = S.inverse();
+  MatrixXd K =  P_ * Ht * Si;
+  // New state
+  x_ = x_ + (K * y);
+  int x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  P_ = (I - K * H_) * P_;
+}
+
 void KalmanFilter::Update(const VectorXd &z) {
   /**
   TODO:
     * update the state by using Kalman Filter equations (Laser)
   */
 	VectorXd z_pred = H_ * x_;
-	VectorXd y = z - z_pred;
-	MatrixXd Ht = H_.transpose();
-	MatrixXd S = H_ * P_ * Ht + R_;
-	MatrixXd Si = S.inverse();
-	MatrixXd PHt = P_ * Ht;
-	MatrixXd K = PHt * Si;
-
-	//new estimate
-	x_ = x_ + (K * y);
-	long x_size = x_.size();
-	MatrixXd I = MatrixXd::Identity(x_size, x_size);
-	P_ = (I - K * H_) * P_;  
+  VectorXd y = z - z_pred;
+  
+  KF(y);
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
@@ -52,4 +57,22 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   TODO:
     * update the state by using Extended Kalman Filter equations (Radar)
   */
+  double rho = sqrt(x_(0)*x_(0) + x_(1)*x_(1));
+  double theta = atan2(x_(1) , x_(0));
+  double rho_dot = (x_(0)*x_(2) + x_(1)*x_(3)) / rho;
+  if(rho < 0.000001)  rho = 0.000001;  
+  VectorXd h = VectorXd(3); // h(x_)
+  h << rho, theta, rho_dot;
+  
+  VectorXd y = z - h;
+
+  while(y(1) > M_PI){
+    y(1) -= DoublePI;
+  }
+
+  while(y(1) < -M_PI){
+    y(1) += DoublePI;
+  }
+
+	KF(y);
 }
